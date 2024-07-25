@@ -1,0 +1,9 @@
+[package]
+name = "Letterboxd-scrap"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reqwest = { version = "0.12.5", features = ["blocking"] }
+scraper="0.16"
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
