@@ -1,7 +1,7 @@
 # letterboxd-scrap-rust
 Rust CLI tool for scraping and extracting movie information from Letterboxd pages.
 
-This is a simple Rust CLI tool that scrapes and extracts movie information from Letterboxd pages. The application is built using the [reqwest](https://docs.rs/reqwest/0.11.4/reqwest/) and [scraper](https://docs.rs/scraper/0.12.0/scraper/) crates.
+This is a simple Rust CLI tool that scrapes and extracts movie information from [Letterboxd](https://letterboxd.com/) pages. The application is built using the [reqwest](https://docs.rs/reqwest/0.11.4/reqwest/) and [scraper](https://docs.rs/scraper/0.12.0/scraper/) crates.
 
 This isn't a full-fledged application, but rather a simple project to get familiar with Rust and web scraping. 
 
