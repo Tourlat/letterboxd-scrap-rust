@@ -8,7 +8,7 @@ fn get_html_content(url: &str) -> Result<String, FilmError> {
 }
 
 fn build_film_url(film_name: &str) -> String {
-    let film_name = film_name.to_lowercase().replace(" ", "-");
+    let film_name = film_name.to_lowercase().replace(":","").replace(" ", "-");
     return format!("https://letterboxd.com/film/{}", film_name);
 }
 
@@ -113,7 +113,7 @@ mod tests {
     #[test]
     fn test_build_film_url() {
         let film_name = "Mad max: fury road";
-        let expected_url = "https://letterboxd.com/film/mad-max:-fury-road";
+        let expected_url = "https://letterboxd.com/film/mad-max-fury-road";
         assert_eq!(build_film_url(film_name), expected_url);
     }
 
