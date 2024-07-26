@@ -12,6 +12,9 @@ As of now, the application can extract the following information from a Letterbo
 - synopsis
 - genres
 
+Be careful when using this tools, movie names must be written exactly as they are on Letterboxd, otherwise the application won't be able to extract the information.
+Also, the application will stop working if the html structure of the Letterboxd page changes.
+
 ## Usage
 
 To use the application, clone the repository, then you can run the following commands :
