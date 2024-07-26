@@ -1,61 +1,15 @@
-use clap::{Parser, Subcommand};
-use scraper::{Html, Selector};
-use std::error::Error;
-use std::fmt;
+mod cli;
+mod film_error;
+mod film_metadata;
+mod film_scraper;
 
-#[derive(Debug)]
-enum FilmError {
-    ParseError,
-    SelectorError,
-    AttributeError,
-    ReqwestError(reqwest::Error),
-}
+use clap::Parser;
+use cli::{Args, Commands};
+use film_metadata::FilmMetaData;
+use film_scraper::extract_film_meta_datas;
 
-impl fmt::Display for FilmError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            FilmError::ReqwestError(ref err) => write!(f, "Request error: {}", err),
-            FilmError::ParseError => write!(f, "Parsing error"),
-            FilmError::SelectorError => write!(f, "Selector error"),
-            FilmError::AttributeError => write!(f, "Attribute error"),
-        }
-    }
-}
-
-impl Error for FilmError {}
-
-impl From<reqwest::Error> for FilmError {
-    fn from(err: reqwest::Error) -> FilmError {
-        FilmError::ReqwestError(err)
-    }
-}
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-struct Args {
-    #[command(subcommand)]
-    command: Option<Commands>,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    Rate { film_name: String },
-    Director { film_name: String },
-    ReleaseYear { film_name: String },
-    Synopsis { film_name: String },
-    Genres { film_name: String },
-    All { film_name: String },
-}
-
-struct FilmMetaData {
-    rating: f32,
-    director: String,
-    release_year: String,
-    synopsis: String,
-    genres: Vec<String>,
-}
-
-fn display_film_metadata(film_name: &str ,metadata: &FilmMetaData) {
-    println!("{} infos:", film_name.to_uppercase());
+fn display_film_metadata(film_name: &str, metadata: &FilmMetaData) {
+    println!("Infos about {} :", film_name.to_uppercase());
     println!("Rating: {:.2}", metadata.rating);
     println!("Director: {}", metadata.director);
     println!("Release Year: {}", metadata.release_year);
@@ -65,105 +19,6 @@ fn display_film_metadata(film_name: &str ,metadata: &FilmMetaData) {
     } else {
         println!("Genres: None");
     }
-}
-
-fn fetch_and_parse_html(film_name: &str) -> Result<Html, FilmError> {
-    let film_url = build_film_url(film_name);
-    let html_content = get_html_content(&film_url)?;
-    let document = Html::parse_document(&html_content);
-    Ok(document)
-}
-
-fn extract_release_year(document: &Html) -> Result<String, FilmError> {
-    let selector = Selector::parse("div.releaseyear a").unwrap();
-    get_film_single_info(document, &selector)
-}
-
-fn extract_director(document: &Html) -> Result<String, FilmError> {
-    let selector = Selector::parse("span.directorlist a span.prettify").unwrap();
-    get_film_single_info(document, &selector)
-}
-
-fn extract_synopsis(document: &Html) -> Result<String, FilmError> {
-    let selector = Selector::parse("div.truncate p").unwrap();
-    get_film_single_info(document, &selector)
-}
-fn extract_rating(document: &Html) -> Result<f32, FilmError> {
-    let selector = Selector::parse(r#"meta[name="twitter:data2"]"#).unwrap();
-    get_film_rating(document, &selector)
-}
-
-fn extract_genres(document: &Html) -> Result<Vec<String>, FilmError> {
-    let selector = Selector::parse("div.text-sluglist.capitalize a.text-slug").unwrap();
-    get_film_multiples_infos(document, &selector)
-}
-fn extract_film_meta_datas(film_name: &str) -> Result<FilmMetaData, FilmError> {
-    let document = fetch_and_parse_html(film_name)?;
-
-    let release_year = extract_release_year(&document)?;
-    let director = extract_director(&document)?;
-    let synopsis = extract_synopsis(&document)?;
-    let rating = extract_rating(&document)?;
-    let genres = extract_genres(&document)?;
-
-    Ok(FilmMetaData {
-        rating,
-        director,
-        release_year,
-        synopsis,
-        genres
-    })
-}
-
-fn get_html_content(url: &str) -> Result<String, FilmError> {
-    let response = reqwest::blocking::get(url)?;
-    Ok(response.text()?)
-}
-
-fn build_film_url(film_name: &str) -> String {
-    let film_name = film_name.replace(" ", "-");
-    return format!("https://letterboxd.com/film/{}", film_name.to_lowercase());
-}
-
-fn get_film_rating(document: &Html, selector: &Selector) -> Result<f32, FilmError> {
-    let element = document
-        .select(selector)
-        .next()
-        .ok_or(FilmError::SelectorError)?;
-
-    let content = element.value().attr("content")
-        .ok_or(FilmError::AttributeError)?;
-
-    let rating: f32 = content.split_whitespace()
-        .next()
-        .ok_or(FilmError::ParseError)?
-        .parse()
-        .map_err(|_| FilmError::ParseError)?;
-
-    Ok(rating)
-}
-
-fn get_film_single_info(document: &Html, selector: &Selector) -> Result<String, FilmError> {
-    let info = document
-        .select(selector)
-        .next()
-        .ok_or(FilmError::SelectorError)?
-        .text()
-        .collect::<String>();
-    Ok(info)
-}
-fn get_film_multiples_infos(
-    document: &Html,
-    selector: &Selector,
-) -> Result<Vec<String>, FilmError> {
-    let infos = document.select(selector);
-    let mut infos_vec = Vec::new();
-
-    for info in infos {
-        infos_vec.push(info.text().collect::<String>());
-    }
-
-    Ok(infos_vec)
 }
 
 fn display_help() {
@@ -217,7 +72,7 @@ fn main() {
         },
         Some(Commands::All { film_name }) => match extract_film_meta_datas(film_name) {
             Ok(metadata) => {
-                display_film_metadata(&film_name,&metadata);
+                display_film_metadata(&film_name, &metadata);
             }
             Err(err) => {
                 println!("Error: {}", err);
